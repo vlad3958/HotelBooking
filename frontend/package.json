@@ -1,0 +1,12 @@
+{
+  "name": "hotelbooking-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Static bootstrap frontend for HotelBooking API",
+  "scripts": {
+    "start": "http-server -p 5500 --cors"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

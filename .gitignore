@@ -1,0 +1,123 @@
+#############################
+# Root .gitignore for HotelBooking
+# Covers: .NET (Visual Studio / Rider), EF Core, Node-based tooling (if added), OS noise
+#############################
+
+### Build artifacts (C# / .NET) ###
+[Bb]in/
+[Oo]bj/
+**/Debug/
+**/Release/
+**/x64/
+**/x86/
+**/ARM/
+**/ARM64/
+**/publish/
+**/PublishProfiles/
+
+# VS intermediate
+*.pdb
+*.mdb
+*.obj
+*.svclog
+*.pidb
+*.log
+Logs/
+logs/
+*.tlog
+
+# Test / coverage
+TestResults/
+*.coverage
+*.coveragexml
+coverage/
+
+### Visual Studio / Rider / JetBrains ###
+.vs/
+.idea/
+*.sln.iml
+*.iml
+_ReSharper*/
+*.DotSettings.user
+
+### User / machine specific ###
+*.user
+*.userosscache
+*.suo
+*.cache
+*.tmp
+*.temp
+~$*
+*.ilk
+*.ipch
+*.rsuser
+
+### NuGet ###
+*.nupkg
+*.snupkg
+# Packages folder (if using packages.config)
+packages/
+# Project.assets.json is regenerated
+project.assets.json
+# Generated props/targets remain under obj but keep them ignored via obj/
+
+### Entity Framework Migrations (keep actual migrations) ###
+# (No blanket ignore; list specific if needed)
+
+### Node / Frontend (if you later add tooling) ###
+node_modules/
+.npm/
+.npmrc.local
+bower_components/
+dist/
+build/
+.tmp/
+.cache/
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+### Environment / Secrets ###
+.env
+.env.*
+!.env.example
+# Local-only appsettings overrides
+appsettings.*.Local.json
+
+### OS / Editor noise ###
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+$RECYCLE.BIN/
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+.Icon?
+# Linux
+*~
+
+### Misc ###
+*.swp
+*.swo
+*.orig
+*.rej
+*.bak
+*.old
+*.trace
+
+### IDE Backups ###
+*.bak
+*.tmp
+
+### Publish Artifacts (adjust if you intentionally commit) ###
+wwwroot/lib/
+
+### Ignore MySQL dumps unless intentionally tracked ###
+*.sql
+*.sql.gz
+
+# End of .gitignore

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <title>Список готелів та номерів</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background:#f2f6fa; }
+    .hotel-card { border-left:4px solid #0d6efd; }
+    .room-badge { font-size:.75rem; }
+    .pointer { cursor:pointer; }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">HotelBooking</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample" aria-controls="navbarsExample" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarsExample">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link active" href="hotels.html">Готелі</a></li>
+        <li class="nav-item"><a class="nav-link" href="bookings.html">Мої бронювання</a></li>
+      </ul>
+      <div class="d-flex">
+        <button id="logoutBtn" class="btn btn-outline-light btn-sm">Вийти</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="row mb-3 g-2 align-items-end">
+    <div class="col-sm-3">
+      <label class="form-label">Початок</label>
+      <input type="date" id="filterStart" class="form-control" />
+    </div>
+    <div class="col-sm-3">
+      <label class="form-label">Кінець</label>
+      <input type="date" id="filterEnd" class="form-control" />
+    </div>
+    <div class="col-sm-3">
+      <label class="form-label">Місто (опц.)</label>
+      <input type="text" id="filterCity" class="form-control" placeholder="Київ" />
+    </div>
+    <div class="col-sm-3 d-grid">
+      <button id="applyFilters" class="btn btn-primary mt-4">Застосувати</button>
+    </div>
+  </div>
+  <div id="alertArea"></div>
+  <div id="hotelsContainer" class="row g-3"></div>
+</div>
+
+<template id="hotelTemplate">
+  <div class="col-12">
+    <div class="card hotel-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h5 class="hotel-name mb-1"></h5>
+            <div class="text-muted small hotel-address"></div>
+            <div class="small mt-1 hotel-description"></div>
+          </div>
+        </div>
+        <hr class="my-3" />
+        <div class="row gy-2 rooms-wrapper"></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="roomTemplate">
+  <div class="col-md-4">
+    <div class="border rounded p-2 h-100 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <strong class="room-name"></strong>
+        <span class="badge text-bg-secondary room-capacity"></span>
+      </div>
+      <div class="mb-1 text-primary fw-semibold room-price"></div>
+      <div class="small text-muted room-availability mb-2"></div>
+      <form class="mt-auto room-book-form">
+        <div class="row g-1">
+          <div class="col-6"><input type="date" class="form-control form-control-sm start-date" required /></div>
+          <div class="col-6"><input type="date" class="form-control form-control-sm end-date" required /></div>
+          <div class="col-12 d-grid mt-1">
+            <button class="btn btn-sm btn-success">Забронювати</button>
+          </div>
+        </div>
+        <div class="small text-danger mt-1 form-error"></div>
+        <div class="small text-success mt-1 form-success"></div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { requireAuth, attachLogout, fmtDateInput, showAlert } from './app.js';
+  import { getHotels, getRoomsByDateRange, getRoomByCity, bookRoom } from './apiClient.js';
+
+  (function authGuard(){
+    if (!requireAuth()) {
+      console.warn('[Hotels] not authenticated, redirect triggered');
+    }
+  })();
+  attachLogout();
+
+  const hotelsContainer = document.getElementById('hotelsContainer');
+  const hotelTpl = document.getElementById('hotelTemplate');
+  const roomTpl = document.getElementById('roomTemplate');
+  const alertArea = document.getElementById('alertArea');
+
+  const filterStart = document.getElementById('filterStart');
+  const filterEnd = document.getElementById('filterEnd');
+  const filterCity = document.getElementById('filterCity');
+  const applyFilters = document.getElementById('applyFilters');
+
+  // default dates: today + tomorrow
+  const today = new Date();
+  const tomorrow = new Date(); tomorrow.setDate(today.getDate()+1);
+  filterStart.value = fmtDateInput(today);
+  filterEnd.value = fmtDateInput(tomorrow);
+
+  applyFilters.addEventListener('click', loadData);
+
+  async function loadData() {
+    console.log('[Hotels] loadData start');
+    try { console.log('[Hotels] token', localStorage.getItem('hb_jwt')); } catch {}
+    hotelsContainer.innerHTML = '<div class="text-center text-muted py-5">Завантаження...</div>';
+    alertArea.innerHTML = '';
+    try {
+      const startVal = filterStart.value;
+      const endVal = filterEnd.value;
+      const cityVal = filterCity.value.trim();
+      let hotels = await getHotels();
+      console.log('[Hotels] raw hotels response:', hotels);
+
+      // If city filter used -> optionally pull city-specific rooms (if backend supports) else filter client side
+      if (cityVal) {
+        try {
+          const cityRooms = await getRoomByCity(cityVal);
+          // map rooms by hotelId
+          const hotelIdSet = new Set(cityRooms.map(r => r.hotelId));
+          hotels = hotels.filter(h => hotelIdSet.has(h.id));
+        } catch {}
+      }
+
+      hotelsContainer.innerHTML = '';
+      for (const h of hotels) {
+        const hotelNode = hotelTpl.content.cloneNode(true);
+        hotelNode.querySelector('.hotel-name').textContent = h.name;
+        hotelNode.querySelector('.hotel-address').textContent = h.address || '';
+        hotelNode.querySelector('.hotel-description').textContent = h.description || '';
+        const roomsWrapper = hotelNode.querySelector('.rooms-wrapper');
+
+        if (!h.rooms || h.rooms.length === 0) {
+          console.warn('[Hotels] hotel has no rooms', h.id, h.name, h.rooms);
+          roomsWrapper.innerHTML = '<div class="col-12 text-muted small">Немає номерів</div>';
+        } else {
+          console.log('[Hotels] rendering rooms for hotel', h.id, 'count', h.rooms.length);
+          for (const r of h.rooms) {
+            console.log('[Hotels] room:', r);
+            const rn = roomTpl.content.cloneNode(true);
+            rn.querySelector('.room-name').textContent = r.name;
+            rn.querySelector('.room-capacity').textContent = `Місць: ${r.capacity}`;
+            rn.querySelector('.room-price').textContent = r.price ? (r.price.toFixed ? r.price.toFixed(2) : r.price) + ' ₴/ніч' : '';
+            const avail = rn.querySelector('.room-availability');
+            const aStart = r.startDate ? r.startDate.slice(0,10) : '—';
+            const aEnd = r.endDate ? r.endDate.slice(0,10) : '—';
+            avail.textContent = `Доступність: ${aStart} → ${aEnd}`;
+
+            const form = rn.querySelector('.room-book-form');
+            const startInput = form.querySelector('.start-date');
+            const endInput = form.querySelector('.end-date');
+            const errEl = form.querySelector('.form-error');
+            const okEl = form.querySelector('.form-success');
+            startInput.value = startVal; endInput.value = endVal;
+
+            form.addEventListener('submit', async (e) => {
+              e.preventDefault(); errEl.textContent=''; okEl.textContent='';
+              if (!startInput.value || !endInput.value) { errEl.textContent='Виберіть дати'; return; }
+              if (startInput.value >= endInput.value) { errEl.textContent='Дата початку повинна бути раніше кінця'; return; }
+              try {
+                await bookRoom(r.id, startInput.value, endInput.value);
+                okEl.textContent = 'Успішно заброньовано!';
+                console.log('[Hotels] booking success roomId', r.id);
+              } catch (ex) {
+                console.error('[Hotels] booking error', ex);
+                errEl.textContent = ex.body?.message || 'Помилка бронювання';
+              }
+            });
+
+            roomsWrapper.appendChild(rn);
+          }
+        }
+
+        hotelsContainer.appendChild(hotelNode);
+      }
+
+      if (hotels.length === 0) {
+        console.warn('[Hotels] hotels array empty after processing');
+        hotelsContainer.innerHTML = '<div class="col-12 text-center text-muted py-5">Нічого не знайдено</div>';
+      }
+    } catch (ex) {
+      console.error('[Hotels] loadData failed', ex);
+      showAlert(alertArea, ex.body?.message || 'Помилка завантаження даних');
+    }
+  }
+
+  loadData();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

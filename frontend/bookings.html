@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <title>Мої бронювання</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background:#f4f6f9; }
+    .table thead th { white-space:nowrap; }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="hotels.html">HotelBooking</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample" aria-controls="navbarsExample" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarsExample">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="hotels.html">Готелі</a></li>
+        <li class="nav-item"><a class="nav-link active" href="bookings.html">Мої бронювання</a></li>
+      </ul>
+      <div class="d-flex">
+        <button id="logoutBtn" class="btn btn-outline-light btn-sm">Вийти</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0">Мої бронювання</h4>
+    <div>
+      <button id="refreshBtn" class="btn btn-sm btn-secondary">Оновити</button>
+    </div>
+  </div>
+  <div id="alertArea"></div>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle" id="bookingsTable">
+      <thead class="table-primary">
+        <tr>
+          <th>#</th>
+          <th>Кімната</th>
+          <th>Початок</th>
+          <th>Кінець</th>
+          <th>Ночей</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div id="emptyState" class="text-center text-muted py-5 d-none">Немає бронювань</div>
+</div>
+
+<script type="module">
+  import { requireAuth, attachLogout, fmtDateTimeHuman, showAlert } from './app.js';
+  import { myBookings } from './apiClient.js';
+
+   (function authGuard(){
+    if (!requireAuth()) {
+      console.warn('[Hotels] not authenticated, redirect triggered');
+    }
+  })();
+  attachLogout();
+
+  const tbody = document.querySelector('#bookingsTable tbody');
+  const emptyState = document.getElementById('emptyState');
+  const alertArea = document.getElementById('alertArea');
+  const refreshBtn = document.getElementById('refreshBtn');
+
+  refreshBtn.addEventListener('click', loadBookings);
+
+  async function loadBookings() {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Завантаження...</td></tr>';
+    emptyState.classList.add('d-none');
+    alertArea.innerHTML='';
+    try {
+      const data = await myBookings();
+      if (!Array.isArray(data) || data.length === 0) {
+        tbody.innerHTML='';
+        emptyState.classList.remove('d-none');
+        return;
+      }
+      tbody.innerHTML='';
+      data.forEach((b, idx) => {
+        const nights = diffNights(b.startDate, b.endDate);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx+1}</td>
+          <td>${escapeHtml((b.roomName && b.roomName.trim()) ? b.roomName : 'Room ' + b.roomId)}</td>
+          <td>${formatDate(b.startDate)}</td>
+          <td>${formatDate(b.endDate)}</td>
+          <td>${nights}</td>`;
+        tbody.appendChild(tr);
+      });
+    } catch (ex) {
+      tbody.innerHTML='';
+      showAlert(alertArea, ex.body?.message || 'Помилка завантаження');
+    }
+  }
+
+  function diffNights(start, end) {
+    const s = new Date(start); const e = new Date(end);
+    if (isNaN(s)||isNaN(e)) return 0;
+    const ms = e - s; return Math.max(0, Math.round(ms/86400000));
+  }
+
+  function formatDate(d) {
+    const dt = new Date(d);
+    if (isNaN(dt)) return '';
+    return dt.toISOString().slice(0,10);
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+  }
+
+  loadBookings();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
