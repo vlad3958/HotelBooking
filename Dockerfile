@@ -7,21 +7,17 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy solution file and project files from backend folder
+# Copy solution file and project files maintaining backend structure
 COPY HotelBooking.sln ./
-COPY backend/HotelBooking.API/HotelBooking.API.csproj HotelBooking.API/
-COPY backend/HotelBooking.Application/HotelBooking.Application.csproj HotelBooking.Application/
-COPY backend/HotelBooking.Domain/HotelBooking.Domain.csproj HotelBooking.Domain/
-COPY backend/HotelBooking.Infrastructure/HotelBooking.Infrastructure.csproj HotelBooking.Infrastructure/
+COPY backend/ ./backend/
 
-# Restore dependencies
+# Restore dependencies (solution file references backend/ paths)
 RUN dotnet restore
 
-# Copy the backend source code
-COPY backend/ .
+# All source code is already copied above
 
 # Build and publish
-WORKDIR /src/HotelBooking.API
+WORKDIR /src/backend/HotelBooking.API
 RUN dotnet publish -c Release -o /app/publish
 
 # Final stage
