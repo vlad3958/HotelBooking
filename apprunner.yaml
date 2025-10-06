@@ -12,6 +12,14 @@ run:
     port: 8080
     env: PORT
   env:
+    - name: DATABASE_URL
+      value: "Server=hotelbooking-mysql-db.ccx6kms20r84.us-east-1.rds.amazonaws.com;Database=hotelbookingdb;Uid=admin;Pwd=HotelBooking123!;"
+    - name: JWT_SECRET_KEY
+      value: "your-super-secret-jwt-key-at-least-32-characters-long"
+    - name: JWT_ISSUER
+      value: "HotelBookingAPI"
+    - name: JWT_AUDIENCE
+      value: "HotelBookingClients"
     - name: ASPNETCORE_URLS
       value: http://+:8080
     - name: ASPNETCORE_ENVIRONMENT
