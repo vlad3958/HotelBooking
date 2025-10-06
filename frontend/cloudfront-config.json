@@ -1,0 +1,45 @@
+{
+    "CallerReference": "hotel-booking-frontend-cf",
+    "Comment": "CloudFront distribution for HotelBooking frontend",
+    "DefaultCacheBehavior": {
+        "TargetOriginId": "S3-hotel-booking-frontend",
+        "ViewerProtocolPolicy": "redirect-to-https",
+        "MinTTL": 0,
+        "ForwardedValues": {
+            "QueryString": false,
+            "Cookies": {
+                "Forward": "none"
+            }
+        },
+        "TrustedSigners": {
+            "Enabled": false,
+            "Quantity": 0
+        }
+    },
+    "Origins": {
+        "Quantity": 1,
+        "Items": [
+            {
+                "Id": "S3-hotel-booking-frontend",
+                "DomainName": "your-hotel-booking-frontend.s3.amazonaws.com",
+                "S3OriginConfig": {
+                    "OriginAccessIdentity": ""
+                }
+            }
+        ]
+    },
+    "Enabled": true,
+    "DefaultRootObject": "login.html",
+    "CustomErrorResponses": {
+        "Quantity": 1,
+        "Items": [
+            {
+                "ErrorCode": 404,
+                "ResponsePagePath": "/login.html",
+                "ResponseCode": "200",
+                "ErrorCachingMinTTL": 300
+            }
+        ]
+    },
+    "PriceClass": "PriceClass_100"
+}

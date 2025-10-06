@@ -10,12 +10,24 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS for local dev (adjust origins as needed)
+// CORS for local dev and production
 var corsPolicy = "DevCors";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(corsPolicy, p => p
-        .WithOrigins("http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:3000")
+        .WithOrigins(
+            // Local development
+            "http://localhost:5500", 
+            "http://127.0.0.1:5500", 
+            "http://localhost:3000",
+            // Render deployment (update with your actual service name)
+            "https://hotelbooking-api.onrender.com",
+            "https://*.onrender.com",
+            // S3 static website (update with your bucket name)
+            "https://*.s3-website-us-east-1.amazonaws.com",
+            "https://*.s3.amazonaws.com"
+        )
+        .SetIsOriginAllowedToAllowWildcardSubdomains()
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());
@@ -58,8 +70,14 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure EF Core with MySQL (Pomelo)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// Render provides DATABASE_URL environment variable for managed database
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (string.IsNullOrEmpty(connectionString))
+{
+    // Fallback to appsettings for local development
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found and DATABASE_URL not set.");
+}
 
 builder.Services.AddDbContext<HotelBookingDbContext>(options =>
 {
@@ -92,10 +110,15 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddSignInManager<SignInManager<ApplicationUser>>()
     .AddDefaultTokenProviders();
 
+// JWT configuration - prefer environment variables for production (Render)
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var signingKey = jwtSection.GetValue<string>("Key") ?? throw new InvalidOperationException("Jwt:Key missing");
-var issuer = jwtSection.GetValue<string>("Issuer");
-var audience = jwtSection.GetValue<string>("Audience");
+var signingKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+    ?? jwtSection.GetValue<string>("Key") 
+    ?? throw new InvalidOperationException("JWT secret key missing (set JWT_SECRET_KEY env var or Jwt:Key in appsettings)");
+var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
+    ?? jwtSection.GetValue<string>("Issuer");
+var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") 
+    ?? jwtSection.GetValue<string>("Audience");
 
 builder.Services.AddAuthentication(options =>
     {

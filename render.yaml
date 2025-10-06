@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: hotelbooking-api
+    env: dotnet
+    buildCommand: cd backend/HotelBooking.API && dotnet restore && dotnet publish -c Release -o out
+    startCommand: cd backend/HotelBooking.API/out && dotnet HotelBooking.API.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:$PORT
+      - key: JWT_ISSUER
+        value: HotelBookingIssuer
+      - key: JWT_AUDIENCE
+        value: HotelBookingAudience
+      - key: JWT_SECRET_KEY
+        generateValue: true
+        
+databases:
+  - name: hotelbooking-db
+    databaseName: hotelbooking
+    user: hoteluser
