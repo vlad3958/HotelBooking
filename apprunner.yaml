@@ -1,0 +1,20 @@
+version: 1.0
+runtime: docker
+build:
+  commands:
+    build:
+      - echo "Building .NET application with Docker"
+      - docker build -t hotel-booking-api .
+run:
+  runtime-version: latest
+  command: dotnet HotelBooking.API.dll
+  network:
+    port: 8080
+    env: PORT
+  env:
+    - name: ASPNETCORE_URLS
+      value: http://+:8080
+    - name: ASPNETCORE_ENVIRONMENT
+      value: Production
+    - name: PORT
+      value: "8080"
