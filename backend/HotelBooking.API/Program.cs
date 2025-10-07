@@ -10,24 +10,40 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS for local dev and production
+// CORS for local dev and deployed static frontends (GitHub Pages, etc.)
 var corsPolicy = "DevCors";
+
+// Base allowed origins (only scheme + host + optional port matter; path segments ignored)
+var allowedOrigins = new List<string>
+{
+    // Local development (static frontend via http-server)
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:3000",
+    // GitHub Pages (user or project site)
+    "https://vlad3958.github.io",
+    // (Legacy / placeholder examples kept for reference – remove if not needed)
+    "https://hotelbooking-api.onrender.com",
+};
+
+// Allow injecting extra origins via environment variable (comma / semicolon / space separated)
+var extraCors = Environment.GetEnvironmentVariable("EXTRA_CORS_ORIGINS");
+if (!string.IsNullOrWhiteSpace(extraCors))
+{
+    foreach (var origin in extraCors.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+    {
+        var trimmed = origin.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmed) && !allowedOrigins.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+        {
+            allowedOrigins.Add(trimmed);
+        }
+    }
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(corsPolicy, p => p
-        .WithOrigins(
-            // Local development
-            "http://localhost:5500", 
-            "http://127.0.0.1:5500", 
-            "http://localhost:3000",
-            // Render deployment (update with your actual service name)
-            "https://hotelbooking-api.onrender.com",
-            "https://*.onrender.com",
-            // S3 static website (update with your bucket name)
-            "https://*.s3-website-us-east-1.amazonaws.com",
-            "https://*.s3.amazonaws.com"
-        )
-        .SetIsOriginAllowedToAllowWildcardSubdomains()
+        .WithOrigins(allowedOrigins.ToArray())
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());
