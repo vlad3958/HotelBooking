@@ -30,7 +30,33 @@ public class AdminController : ControllerBase
     {
         try
         {
-            var bookings = _adminService.GetAllBookings();
+            // Flatten the object graph to avoid deep navigation cycles (Hotel -> Rooms -> Bookings ...)
+            var bookings = _adminService.GetAllBookings()
+                .Select(b => new
+                {
+                    b.Id,
+                    b.UserId,
+                    b.RoomId,
+                    b.StartDate,
+                    b.EndDate,
+                    Room = b.Room == null ? null : new
+                    {
+                        b.Room.Id,
+                        b.Room.Name,
+                        b.Room.Price,
+                        b.Room.Capacity,
+                        b.Room.StartDate,
+                        b.Room.EndDate,
+                        Hotel = b.Room.Hotel == null ? null : new
+                        {
+                            b.Room.Hotel.Id,
+                            b.Room.Hotel.Name,
+                            b.Room.Hotel.Address,
+                            b.Room.Hotel.Description
+                        }
+                    }
+                })
+                .ToList();
             return Ok(bookings);
         }
         catch (Exception ex)
