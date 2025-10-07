@@ -1,141 +1,150 @@
+dotnet restore
+dotnet run --launch-profile https
 # HotelBooking
 
-## Стек
-- Backend: .NET 9, ASP.NET Core, EF Core (MySQL/Pomelo), Identity + JWT
-- Архітектура: Domain / Application / Infrastructure / API + Frontend (статичні HTML + ES Modules)
+Полноцінний приклад застосунку для бронювання готелів: ASP.NET Core (.NET 9) + MySQL (EF Core / Pomelo) + Identity + JWT + статичний фронтенд (GitHub Pages) + Heroku (бекенд).
 
-## Основне
-- Ролі: Admin, User (сидяться при старті)  
-- Авторизація: JWT (localStorage у фронті)  
-- Сутності: Hotel, Room, Booking, BookingStatsData  
-- Перевірка доступності: відсутність перекриття бронювань + вікно доступності кімнати  
-- Статистика для Admin: кількість бронювань, унікальні користувачі, кімнати, room-nights  
-
-## Запуск (dev)
-Backend:
+## Архітектура
 ```
+backend/
+  HotelBooking.Domain        (сутності: Hotel, Room, Booking, BookingStatsData)
+  HotelBooking.Application   (DTO, сервіси, інтерфейси)
+  HotelBooking.Infrastructure( DbContext, Repositories, Identity )
+  HotelBooking.API           (Controllers, Program.cs, DI, CORS, JWT )
+frontend/
+  *.html + *.js (ES Modules, без фреймворків)
+```
+
+## Основні можливості
+| Функція | Опис |
+|---------|------|
+| Реєстрація / Логін | JWT токен, зберігається у localStorage |
+| Ролі | User, Admin (seed при старті або через env `Admin__Email` / `Admin__Password`) |
+| Адмін панель | CRUD готелі / кімнати, перегляд бронювань, статистика (картки) |
+| Бронювання | Запобігання перетину дат, вікно доступності кімнати |
+| Статистика | totalBookings, distinctRooms, distinctUsers, totalRoomNights за діапазон |
+| CORS | Гнучка конфігурація + ALLOW_ALL_CORS для діагностики |
+
+## Швидкий старт (Dev)
+Backend:
+```powershell
 cd backend/HotelBooking.API
 dotnet restore
 dotnet run --launch-profile https
 ```
-Frontend:
-```
+Frontend (простий статичний сервер):
+```powershell
 cd frontend
 npx http-server -p 5500
 ```
+Відкрити: http://localhost:5500/login.html
 
-## Конфіг
-- Редагуйте `appsettings.Development.json` (рядок підключення до MySQL)
-- Секрет JWT у конфігурації
+## Початковий Admin
+Через env змінні (рекомендовано в проді):
+```powershell
+Admin__Email=admin@yourdomain.com
+Admin__Password=Str0ngPwd!23
+```
+Якщо не задано – створюється дефолт (переконайтесь що ви зміните його в продакшені).
 
-## Логін
-- Admin (вже є): email: admin@hotel.local / пароль: Admin123$
+## Авторизація
+Усі захищені запити: заголовок
+```
+Authorization: Bearer <JWT>
+```
 
-## API 
+## Контроллери / Ендпоінти (коротко)
+Auth (`/api/Auth`): register, login, admin/create-user, admin/status, admin/bootstrap (діагностика – видалити після налаштування).
 
-### Ендпоінти
+Client (`/api/Client`): hotels, rooms, rooms/city/{city}, rooms/daterange, book, bookings/me.
 
-AuthController (`api/auth`):
-- POST `api/auth/register`  – реєстрація користувача (роль завжди User)
-	- Body: `{ "email": string, "password": string }`
-	- 200: `{ message, id, email }`
-- POST `api/auth/admin/create-user` (Admin) – створити користувача з роллю User або Admin
-	- Body: `{ email, password, role }`
-	- 200: `{ message, id, email, role }`
-- POST `api/auth/login`  – логін, повертає JWT
-	- Body: `{ email, password }`
-	- 200: `{ token }`
+Admin (`/api/Admin`): bookings, AddHotel, UpdateHotel/{id}, RemoveHotel/{id}, AddRoom, UpdateRoom/{id}, RemoveRoom/{id}, stats/bookings.
 
-ClientController (`api/client`, Roles: User|Admin):
-- GET `api/client/hotels` – список готелів з кімнатами
-- GET `api/client/rooms` – всі кімнати
-- GET `api/client/rooms/city/{city}` – кімнати за містом
-- GET `api/client/rooms/daterange?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` – фільтр по діапазону дат
-- POST `api/client/book` – забронювати кімнату
-	- Body: `{ roomId, startDate, endDate }`
-	- 200: `{ id, roomId, userId, startDate, endDate, roomName }`
-- GET `api/client/bookings/me` – бронювання поточного користувача
-
-AdminController (`api/admin`, Role: Admin):
-- GET `api/admin/bookings` – всі бронювання
-- POST `api/admin/AddHotel?name=&address=&description=` – додати готель (query/form params)
-- POST `api/admin/UpdateHotel/{hotelId}?name=&address=&description=` – оновити готель
-- DELETE `api/admin/RemoveHotel/{hotelId}` – видалити готель
-- POST `api/admin/AddRoom?hotelId=&name=&price=&capacity=&startDate=&endDate=` – додати кімнату (startDate/endDate необов’язкові)
-- POST `api/admin/UpdateRoom/{roomId}?name=&price=&capacity=` – оновити кімнату
-- DELETE `api/admin/RemoveRoom/{roomId}` – видалити кімнату
-- GET `api/admin/stats/bookings?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` – статистика бронювань за діапазон
-
-### Авторизація
-Передавайте заголовок:
-`Authorization: Bearer <JWT>`
-
-### Формати дат
-Використовуйте ISO 8601 (`YYYY-MM-DD` або повний `YYYY-MM-DDTHH:MM:SSZ`).
+Формати дат: ISO8601 (наприклад `2025-10-05` або повний `2025-10-05T00:00:00Z`).
 
 ## Frontend сторінки
-- `login.html` – отримати токен
-- `hotels.html` – перегляд готелів / бронювання
-- `bookings.html` – мої бронювання
+| Сторінка | Призначення |
+|----------|-------------|
+| login.html | Логін / отримання JWT |
+| hotels.html | Перегляд готелів + кімнат (публічно для авторизованих) |
+| bookings.html | Бронювання поточного користувача |
+| admin.html | Адмін панель (роль Admin) |
 
-## Збірка / Публікація
-- Публікація: `dotnet publish -c Release`
-- Міграції (якщо додані): `dotnet ef migrations add <name>` / `dotnet ef database update`
+### Admin Panel (UI)
+Включає:
+- Картки статистики (без “сирого” JSON)
+- CRUD форми (готелі, кімнати)
+- Перегляд усіх бронювань (JSON)
+- Decode Token (debug)
+- Toast-нотифікації успіх/помилка
 
-## Environment Variables (Prod / Heroku / RDS)
-Налаштуйте наступні змінні середовища перед запуском у production:
+## Environment Variables
+| Var | Призначення |
+|-----|-------------|
+| DATABASE_URL / CLEARDB_DATABASE_URL | MySQL conn string (парсинг mysql://) |
+| JWT_SECRET_KEY | Підпис JWT (мін. 32 символи) |
+| JWT_ISSUER / JWT_AUDIENCE | Параметри токена |
+| Admin__Email / Admin__Password | Seed admin користувача |
+| ALLOW_ALL_CORS | Якщо = `true` – тимчасово дозволити всі origin (для debug) |
+| EXTRA_CORS_ORIGINS | Додаткові origin через `;` |
+| PORT | Heroku port binding |
 
-| Variable | Purpose | Notes |
-|----------|---------|-------|
-| `DATABASE_URL` | Основний рядок підключення (Heroku / Render) | Для Heroku з ClearDB ми автоматично парсимо `CLEARDB_DATABASE_URL` якщо `DATABASE_URL` відсутній |
-| `CLEARDB_DATABASE_URL` | Авто-додається Heroku addon ClearDB | Формат `mysql://user:pass@host/db?reconnect=true` – парситься у `Program.cs` |
-| `JWT_SECRET_KEY` | Секрет для підпису JWT | Використовуйте довгий випадковий рядок (мін. 32 символи) |
-| `JWT_ISSUER` | Issuer в токені | Напр. `HotelBookingAPI` |
-| `JWT_AUDIENCE` | Audience в токені | Напр. `HotelBookingClient` або origin фронтенду |
-| `Admin__Email` | Email seed-адміна | Використовує подвійні підкреслення для вкладеної конфігурації |
-| `Admin__Password` | Пароль seed-адміна | ОБОВʼЯЗКОВО змініть дефолтний |
-| `ASPNETCORE_ENVIRONMENT` | Середовище | `Development` або `Production` |
-| `PORT` | (Heroku) порт прослуховування | Автоматично підхоплюється у `Program.cs` |
-
-### Приклад Heroku (PowerShell)
+### Приклад (Heroku)
 ```powershell
-heroku config:set JWT_SECRET_KEY="<random_64_chars>" JWT_ISSUER=HotelBookingAPI JWT_AUDIENCE=HotelBookingClient `
-  Admin__Email=admin@yourdomain.com Admin__Password=Str0ngPwd!23 ASPNETCORE_ENVIRONMENT=Production
+heroku config:set JWT_SECRET_KEY="<rand64>" JWT_ISSUER=HotelBookingAPI JWT_AUDIENCE=HotelBookingClient `
+  Admin__Email=admin@yourdomain.com Admin__Password=Str0ngPwd!23 ALLOW_ALL_CORS=false -a <app-name>
 ```
 
-## Перехід з Heroku ClearDB на AWS RDS (MySQL)
-Якщо ви найближчим часом переходите на RDS:
-1. Створіть інстанс (Single-AZ, db.t3.micro, 20GB для тесту).
-2. Увімкніть публічний доступ (або налаштуйте SSH/VPC доступ через бекенд).
-3. Створіть користувача / базу (або використайте `admin` користувача з паролем).
-4. Сформуйте рядок підключення у форматі:
-	`Server=<endpoint>;Port=3306;Database=<dbname>;User Id=<user>;Password=<pwd>;SslMode=Preferred;CharSet=utf8mb4;`
-5. Встановіть його як `DATABASE_URL` у середовищі (Heroku або інший хостинг).
-6. Виконайте міграції:
+## Міграції та БД
+Автоматично виконується `Database.Migrate()` при старті. Ручні команди (якщо потрібно):
 ```powershell
+dotnet ef migrations add <Name> --project backend/HotelBooking.Infrastructure --startup-project backend/HotelBooking.API
 dotnet ef database update --project backend/HotelBooking.Infrastructure --startup-project backend/HotelBooking.API
 ```
-	(Або покладіться на автоматичне `db.Database.Migrate()` при старті – це вже в коді.)
-7. Після міграції – протестуйте логін / створення обʼєктів.
 
-### Резервне копіювання
-- RDS автоматично створює snapshots (якщо увімкнено при створенні). Для мінімальної ціни можна спершу вимкнути автоматичний backup, але це зменшує надійність.
+## Деплой
+1. Backend → Heroku: публікуємо `dotnet publish` і в Procfile вказуємо двійковий запуск.
+2. Frontend → GitHub Pages (workflow збирає і деплоїть в `gh-pages`).
+3. Налаштуйте CORS (ENV або оновити список у `Program.cs`).
 
-### Оптимізація витрат
-- Для dev оточення достатньо 20GB gp3 + Single-AZ.
-- Вимикайте Enhanced Monitoring / Performance Insights якщо не потрібні.
+## CORS
+Базовий список + можливість:
+- `ALLOW_ALL_CORS=true` (тільки тимчасово)
+- `EXTRA_CORS_ORIGINS="https://mydomain1.com;https://mydomain2.com"`
 
-## CORS Origins
-Оновіть список у `Program.cs` коли будете знати домен фронтенду (S3 / CloudFront / інше).
+## Безпека / Hardening
+| Рекомендація | Пояснення |
+|--------------|-----------|
+| Змінити seed admin пароль | Дефолтні креденшали = ризик |
+| Прибрати admin bootstrap/status | Після успішної ініціалізації ролей |
+| Використати довгий JWT секрет | Мінімізує brute force |
+| Вимкнути ALLOW_ALL_CORS у продакшені | Лише точні origins |
+| Логи без паролів | Не логувати токени/паролі |
 
-## Swagger у Production
-Зараз Swagger доступний лише у Development. Якщо треба тимчасово в проді – можна змінити умову:
+## Траблшутинг
+| Симптом | Причина | Рішення |
+|---------|---------|---------|
+| 401 на admin endpoints | Немає ролі Admin або токен прострочений | Relogin / перевірити роль |
+| Порожній список готелів | Ще не створено жодного | Додайте через admin панель |
+| 404 /api/api/... | Подвійний префікс (виправлено) | Оновити кеш фронта |
+| CORS помилки | Origin не в списку | EXTRA_CORS_ORIGINS або точна конфіг |
+
+## План наступних покращень (IDEAS)
+- Таблиця готелів у адмінці зі стрічковим редагуванням
+- Пошук/фільтри кімнат
+- Пагінація бронювань
+- Role promotion UI (user -> admin)
+
+## Swagger (опціонально в проді)
 ```csharp
 if (app.Environment.IsDevelopment() || Environment.GetEnvironmentVariable("ENABLE_SWAGGER") == "1")
 {
-	 app.UseSwagger();
-	 app.UseSwaggerUI();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 ```
-та задати `ENABLE_SWAGGER=1` як змінну середовища.
+Тоді: `ENABLE_SWAGGER=1`.
+
+## License
+Internal / навчальний приклад (можна адаптувати під власні проекти).
 
