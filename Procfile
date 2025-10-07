@@ -1,1 +1,1 @@
-web: cd backend/HotelBooking.API && dotnet HotelBooking.API.dll
+web: bash -c "cd backend/HotelBooking.API/bin/publish && ./HotelBooking.API --urls http://0.0.0.0:$PORT"
