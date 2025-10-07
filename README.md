@@ -81,3 +81,61 @@ AdminController (`api/admin`, Role: Admin):
 ## Збірка / Публікація
 - Публікація: `dotnet publish -c Release`
 - Міграції (якщо додані): `dotnet ef migrations add <name>` / `dotnet ef database update`
+
+## Environment Variables (Prod / Heroku / RDS)
+Налаштуйте наступні змінні середовища перед запуском у production:
+
+| Variable | Purpose | Notes |
+|----------|---------|-------|
+| `DATABASE_URL` | Основний рядок підключення (Heroku / Render) | Для Heroku з ClearDB ми автоматично парсимо `CLEARDB_DATABASE_URL` якщо `DATABASE_URL` відсутній |
+| `CLEARDB_DATABASE_URL` | Авто-додається Heroku addon ClearDB | Формат `mysql://user:pass@host/db?reconnect=true` – парситься у `Program.cs` |
+| `JWT_SECRET_KEY` | Секрет для підпису JWT | Використовуйте довгий випадковий рядок (мін. 32 символи) |
+| `JWT_ISSUER` | Issuer в токені | Напр. `HotelBookingAPI` |
+| `JWT_AUDIENCE` | Audience в токені | Напр. `HotelBookingClient` або origin фронтенду |
+| `Admin__Email` | Email seed-адміна | Використовує подвійні підкреслення для вкладеної конфігурації |
+| `Admin__Password` | Пароль seed-адміна | ОБОВʼЯЗКОВО змініть дефолтний |
+| `ASPNETCORE_ENVIRONMENT` | Середовище | `Development` або `Production` |
+| `PORT` | (Heroku) порт прослуховування | Автоматично підхоплюється у `Program.cs` |
+
+### Приклад Heroku (PowerShell)
+```powershell
+heroku config:set JWT_SECRET_KEY="<random_64_chars>" JWT_ISSUER=HotelBookingAPI JWT_AUDIENCE=HotelBookingClient `
+  Admin__Email=admin@yourdomain.com Admin__Password=Str0ngPwd!23 ASPNETCORE_ENVIRONMENT=Production
+```
+
+## Перехід з Heroku ClearDB на AWS RDS (MySQL)
+Якщо ви найближчим часом переходите на RDS:
+1. Створіть інстанс (Single-AZ, db.t3.micro, 20GB для тесту).
+2. Увімкніть публічний доступ (або налаштуйте SSH/VPC доступ через бекенд).
+3. Створіть користувача / базу (або використайте `admin` користувача з паролем).
+4. Сформуйте рядок підключення у форматі:
+	`Server=<endpoint>;Port=3306;Database=<dbname>;User Id=<user>;Password=<pwd>;SslMode=Preferred;CharSet=utf8mb4;`
+5. Встановіть його як `DATABASE_URL` у середовищі (Heroku або інший хостинг).
+6. Виконайте міграції:
+```powershell
+dotnet ef database update --project backend/HotelBooking.Infrastructure --startup-project backend/HotelBooking.API
+```
+	(Або покладіться на автоматичне `db.Database.Migrate()` при старті – це вже в коді.)
+7. Після міграції – протестуйте логін / створення обʼєктів.
+
+### Резервне копіювання
+- RDS автоматично створює snapshots (якщо увімкнено при створенні). Для мінімальної ціни можна спершу вимкнути автоматичний backup, але це зменшує надійність.
+
+### Оптимізація витрат
+- Для dev оточення достатньо 20GB gp3 + Single-AZ.
+- Вимикайте Enhanced Monitoring / Performance Insights якщо не потрібні.
+
+## CORS Origins
+Оновіть список у `Program.cs` коли будете знати домен фронтенду (S3 / CloudFront / інше).
+
+## Swagger у Production
+Зараз Swagger доступний лише у Development. Якщо треба тимчасово в проді – можна змінити умову:
+```csharp
+if (app.Environment.IsDevelopment() || Environment.GetEnvironmentVariable("ENABLE_SWAGGER") == "1")
+{
+	 app.UseSwagger();
+	 app.UseSwaggerUI();
+}
+```
+та задати `ENABLE_SWAGGER=1` як змінну середовища.
+

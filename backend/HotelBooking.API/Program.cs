@@ -73,30 +73,42 @@ builder.Services.AddSwaggerGen(c =>
 // Heroku ClearDB provides CLEARDB_DATABASE_URL (e.g. mysql://user:pass@host/db?reconnect=true)
 // Some platforms (Render) provide DATABASE_URL.
 string? connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+
+string? TryBuildMySqlFromUrl(string url)
+{
+    if (string.IsNullOrWhiteSpace(url)) return null;
+    // Accept mysql:// or CLEARDB style
+    if (!url.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase)) return null;
+    try
+    {
+        var uri = new Uri(url);
+        var db = uri.AbsolutePath.TrimStart('/');
+        var userInfo = uri.UserInfo.Split(':');
+        var user = Uri.UnescapeDataString(userInfo.ElementAtOrDefault(0) ?? "");
+        var pass = Uri.UnescapeDataString(userInfo.ElementAtOrDefault(1) ?? "");
+        var host = uri.Host;
+        var port = uri.Port > 0 ? uri.Port : 3306;
+        return $"Server={host};Port={port};Database={db};User Id={user};Password={pass};SslMode=Preferred;CharSet=utf8mb4;";
+    }
+    catch
+    {
+        return null; // let fallback handle error/logging
+    }
+}
+
+// If DATABASE_URL is a mysql:// URL convert it
+var parsedFromDbUrl = TryBuildMySqlFromUrl(connectionString ?? string.Empty);
+if (parsedFromDbUrl != null)
+    connectionString = parsedFromDbUrl;
+
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     var clearDbUrl = Environment.GetEnvironmentVariable("CLEARDB_DATABASE_URL");
-    if (!string.IsNullOrWhiteSpace(clearDbUrl))
-    {
-        try
-        {
-            var uri = new Uri(clearDbUrl);
-            // uri.PathAndQuery starts with /dbname
-            var db = uri.AbsolutePath.TrimStart('/');
-            var userInfo = uri.UserInfo.Split(':');
-            var user = Uri.UnescapeDataString(userInfo[0]);
-            var pass = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
-            var host = uri.Host;
-            var port = uri.Port > 0 ? uri.Port : 3306;
-            // Build standard MySQL connection string for Pomelo
-            connectionString = $"Server={host};Port={port};Database={db};User Id={user};Password={pass};SslMode=Preferred;CharSet=utf8mb4;";
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("Failed to parse CLEARDB_DATABASE_URL", ex);
-        }
-    }
+    var parsedClear = TryBuildMySqlFromUrl(clearDbUrl ?? string.Empty);
+    if (parsedClear != null)
+        connectionString = parsedClear;
 }
+
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     // Fallback to appsettings for local development
