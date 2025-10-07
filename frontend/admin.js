@@ -1,5 +1,34 @@
 import { apiBase, getToken } from './apiClient.js';
 
+// Toast notifications
+function showToast(message, type='info', timeout=4000){
+  let host = document.getElementById('toasts');
+  if(!host){
+    host = document.createElement('div');
+    host.id = 'toasts';
+    document.body.appendChild(host);
+  }
+  const div = document.createElement('div');
+  div.className = 'toast '+type;
+  div.innerHTML = `<span>${message}</span>`;
+  const btn = document.createElement('button');
+  btn.className='close-btn';
+  btn.innerHTML='&times;';
+  btn.addEventListener('click', () => removeToast(div));
+  div.appendChild(btn);
+  host.appendChild(div);
+  if(timeout>0){
+    setTimeout(()=> removeToast(div), timeout);
+  }
+  return div;
+}
+
+function removeToast(el){
+  if(!el) return;
+  el.classList.add('fading');
+  el.addEventListener('animationend', () => el.remove());
+}
+
 function setStatus(el, msg, ok=false){
   el.textContent = msg;
   el.className = ok ? 'ok' : 'error';
@@ -71,9 +100,13 @@ async function addHotel(e){
   };
   try {
     const data = await apiFetch('/api/Admin/AddHotel'+encodeQuery(body), { method:'POST' });
-    setStatus(msg,'Hotel created id '+data?.hotelId || 'OK', true);
+    const createdId = data?.hotelId || 'OK';
+    setStatus(msg,'Hotel created id '+ createdId, true);
+    showToast('Отель создан (ID '+createdId+')','success');
   } catch(err){
-    setStatus(msg,'Error '+(err.data?.message || err.status), false);
+    const errMsg = 'Ошибка создания отеля: '+(err.data?.message || err.status);
+    setStatus(msg, errMsg, false);
+    showToast(errMsg,'error');
   }
 }
 
@@ -87,6 +120,7 @@ async function updateHotel(e){
   try {
     await apiFetch('/api/Admin/UpdateHotel/'+hotelId + q, { method:'POST' });
     setStatus(msg,'Updated', true);
+    showToast('Отель обновлён ('+hotelId+')','success');
   } catch(err){ setStatus(msg,'Error '+(err.data?.message || err.status), false); }
 }
 
@@ -98,6 +132,7 @@ async function removeHotel(e){
   try {
     await apiFetch('/api/Admin/RemoveHotel/'+f.hotelId.value, { method:'DELETE' });
     setStatus(msg,'Removed', true);
+    showToast('Отель удалён ('+f.hotelId.value+')','success');
   } catch(err){ setStatus(msg,'Error '+(err.data?.message || err.status), false); }
 }
 
@@ -113,7 +148,11 @@ async function addRoom(e){
     endDate: f.endDate.value
   });
   try { await apiFetch('/api/Admin/AddRoom'+q, { method:'POST' }); setStatus(msg,'Room added', true); }
-  catch(err){ setStatus(msg,'Error '+(err.data?.message || err.status), false); }
+  catch(err){
+    const m = 'Ошибка добавления комнаты: '+(err.data?.message || err.status);
+    setStatus(msg,m,false); showToast(m,'error');
+  }
+  if(msg.className==='ok') showToast('Комната добавлена','success');
 }
 
 async function updateRoom(e){
@@ -121,14 +160,22 @@ async function updateRoom(e){
   const f = e.target; const msg = document.getElementById('roomUpdateMsg'); setStatus(msg,'');
   const q = encodeQuery({ name:f.name.value.trim(), price:f.price.value, capacity:f.capacity.value });
   try { await apiFetch('/api/Admin/UpdateRoom/'+f.roomId.value + q, { method:'POST' }); setStatus(msg,'Updated', true); }
-  catch(err){ setStatus(msg,'Error '+(err.data?.message || err.status), false); }
+  catch(err){
+    const m='Ошибка обновления комнаты: '+(err.data?.message || err.status);
+    setStatus(msg,m,false); showToast(m,'error'); return;
+  }
+  showToast('Комната обновлена ('+f.roomId.value+')','success');
 }
 
 async function removeRoom(e){
   e.preventDefault();
   const f = e.target; const msg = document.getElementById('roomRemoveMsg'); setStatus(msg,'');
   try { await apiFetch('/api/Admin/RemoveRoom/'+f.roomId.value, { method:'DELETE' }); setStatus(msg,'Removed', true); }
-  catch(err){ setStatus(msg,'Error '+(err.data?.message || err.status), false); }
+  catch(err){
+    const m='Ошибка удаления комнаты: '+(err.data?.message || err.status);
+    setStatus(msg,m,false); showToast(m,'error'); return;
+  }
+  showToast('Комната удалена ('+f.roomId.value+')','success');
 }
 
 async function loadBookings(){

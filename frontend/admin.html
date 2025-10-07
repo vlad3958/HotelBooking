@@ -29,9 +29,26 @@
     th { background:#f0f2f5; }
     .badge { background:#1f4d8f; color:#fff; border-radius:12px; padding:2px 8px; font-size:11px; }
     .muted { color:#666; font-size:12px; }
+    /* Toast notifications */
+    #toasts { position:fixed; top:14px; right:14px; display:flex; flex-direction:column; gap:10px; z-index:1200; }
+    .toast { 
+      min-width:240px; max-width:360px; background:#fff; border-radius:6px; padding:10px 14px 10px 12px; 
+      box-shadow:0 6px 18px -6px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.12); font-size:13px; position:relative; 
+      display:flex; align-items:flex-start; gap:10px; line-height:1.35;
+      animation:slideIn .35s ease;
+    }
+    .toast.success { border-left:4px solid #2c7a3f; }
+    .toast.error { border-left:4px solid #c0392b; }
+    .toast.info { border-left:4px solid #1f4d8f; }
+    .toast .close-btn { background:none; border:none; cursor:pointer; font-size:16px; line-height:1; color:#555; position:absolute; top:4px; right:6px; }
+    .toast .close-btn:hover { color:#000; }
+    @keyframes slideIn { from { transform:translateX(40px); opacity:0;} to { transform:translateX(0); opacity:1;} }
+    @keyframes fadeOut { to { opacity:0; transform:translateX(40px);} }
+    .toast.fading { animation:fadeOut .4s forwards; }
   </style>
 </head>
 <body>
+<div id="toasts" aria-live="polite" aria-atomic="true"></div>
 <header>
   <h1>HotelBooking Admin</h1>
   <nav>
