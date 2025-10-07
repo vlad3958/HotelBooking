@@ -143,6 +143,41 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    // Diagnostics: check if default admin exists and has Admin role
+    [HttpGet("admin/status")]
+    [AllowAnonymous]
+    public async Task<IActionResult> AdminStatus()
+    {
+        var adminEmail = _config["Admin:Email"] ?? "admin@example.com";
+        var user = await _userManager.FindByEmailAsync(adminEmail);
+        if (user == null)
+            return Ok(new { exists = false, email = adminEmail, hasAdminRole = false });
+        var inRole = await _userManager.IsInRoleAsync(user, "Admin");
+        return Ok(new { exists = true, email = adminEmail, hasAdminRole = inRole });
+    }
+
+    // Bootstrap: recreate default admin if missing (idempotent)
+    [HttpPost("admin/bootstrap")]
+    [AllowAnonymous]
+    public async Task<IActionResult> BootstrapAdmin()
+    {
+        var adminEmail = _config["Admin:Email"] ?? "admin@example.com";
+        var adminPassword = _config["Admin:Password"] ?? "Admin123!";
+        var existing = await _userManager.FindByEmailAsync(adminEmail);
+        if (existing != null)
+        {
+            if (!await _userManager.IsInRoleAsync(existing, "Admin"))
+                await _userManager.AddToRoleAsync(existing, "Admin");
+            return Ok(new { created = false, email = adminEmail, ensuredRole = true });
+        }
+        var newUser = new ApplicationUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true, IsAdmin = true };
+        var create = await _userManager.CreateAsync(newUser, adminPassword);
+        if (!create.Succeeded)
+            return BadRequest(new { created = false, errors = create.Errors.Select(e => e.Description) });
+        await _userManager.AddToRoleAsync(newUser, "Admin");
+        return Ok(new { created = true, email = adminEmail });
+    }
 }
    public class RegisterRequest
     {

@@ -298,8 +298,12 @@ using (var scope = app.Services.CreateScope())
         }
 
         // Seed default admin user
-        var adminEmail = builder.Configuration["Admin:Email"] ?? "admin@example.com";
-        var adminPassword = builder.Configuration["Admin:Password"] ?? "Admin123!"; // Make sure to change in production
+        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL")
+            ?? builder.Configuration["Admin:Email"]
+            ?? "admin@example.com";
+        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD")
+            ?? builder.Configuration["Admin:Password"]
+            ?? "Admin123!"; // Make sure to change in production
         var existingAdmin = userManager.FindByEmailAsync(adminEmail).GetAwaiter().GetResult();
         if (existingAdmin == null)
         {
