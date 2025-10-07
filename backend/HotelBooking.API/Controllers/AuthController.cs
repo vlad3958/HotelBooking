@@ -100,11 +100,29 @@ public class AuthController : ControllerBase
 
     private string GenerateJwt(ApplicationUser user, IList<string> roles)
     {
+        // Prefer environment variables (as used in Program.cs) with fallback to configuration.
         var jwtSection = _config.GetSection("Jwt");
-        var key = jwtSection.GetValue<string>("Key")!;
-        var issuer = jwtSection.GetValue<string>("Issuer");
-        var audience = jwtSection.GetValue<string>("Audience");
-        var expiresMinutes = jwtSection.GetValue<int>("ExpiresMinutes");
+        var key = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
+                  ?? jwtSection.GetValue<string>("Key");
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new InvalidOperationException("JWT secret key is not configured (set env JWT_SECRET_KEY or Jwt:Key)");
+        }
+        var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
+                     ?? jwtSection.GetValue<string>("Issuer");
+        var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+                       ?? jwtSection.GetValue<string>("Audience");
+        var expiresMinutesRaw = Environment.GetEnvironmentVariable("JWT_EXPIRES_MINUTES");
+        int expiresMinutes = 60;
+        if (!string.IsNullOrWhiteSpace(expiresMinutesRaw) && int.TryParse(expiresMinutesRaw, out var parsed))
+        {
+            expiresMinutes = parsed;
+        }
+        else
+        {
+            var configured = jwtSection.GetValue<int?>("ExpiresMinutes");
+            if (configured.HasValue && configured.Value > 0) expiresMinutes = configured.Value;
+        }
 
         var claims = new List<Claim>
         {
@@ -114,7 +132,7 @@ public class AuthController : ControllerBase
         };
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
-        var creds = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)), SecurityAlgorithms.HmacSha256);
+    var creds = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)), SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
             issuer: issuer,
