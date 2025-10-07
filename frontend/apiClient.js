@@ -1,3 +1,4 @@
+// trigger pages deploy
 /**
  * Simple API client for HotelBooking backend.
  * BASE_URL auto-detects depending on hosting:
@@ -7,8 +8,7 @@
  */
 const DEFAULT_LOCAL = 'http://localhost:5127/api';
 // Put your deployed API URL here (Heroku backend):
-const HEROKU_BACKEND = 'https://hotelbooking-api-dotnet-f4ed83e25d9f.herokuapp.com/api';
-
+const HEROKU_BACKEND = 'https://https://hotel-booking-api-940e39a34b89.herokuapp.com/api';
 function resolveBaseUrl() {
   // If a global override is set (window.HOTEL_API_BASE) use it
   if (typeof window !== 'undefined' && window.HOTEL_API_BASE) {
