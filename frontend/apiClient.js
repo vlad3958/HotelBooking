@@ -1,4 +1,5 @@
 // trigger pages deploy
+// TEMP DEBUG: base URL determination for troubleshooting registration
 /**
  * Simple API client for HotelBooking backend.
  * BASE_URL auto-detects depending on hosting:
@@ -7,10 +8,9 @@
  *  - Fallback: localhost
  */
 const DEFAULT_LOCAL = 'http://localhost:5127/api';
-// Put your deployed API URL here (Heroku backend):
-const HEROKU_BACKEND = 'https://https://hotel-booking-api-940e39a34b89.herokuapp.com/api';
+// Corrected deployed API URL (Heroku backend):
+const HEROKU_BACKEND = 'https://hotel-booking-api-940e39a34b89.herokuapp.com/api';
 function resolveBaseUrl() {
-  // If a global override is set (window.HOTEL_API_BASE) use it
   if (typeof window !== 'undefined' && window.HOTEL_API_BASE) {
     return window.HOTEL_API_BASE.replace(/\/$/, '');
   }
@@ -23,6 +23,8 @@ function resolveBaseUrl() {
 }
 
 const BASE_URL = resolveBaseUrl();
+// TEMP DEBUG
+if (typeof window !== 'undefined') { console.log('[HB] Using BASE_URL:', BASE_URL); }
 
 // In-memory token store (replace with better storage if needed)
 let authToken = null;
@@ -85,7 +87,9 @@ export async function login(email, password) {
 }
 
 export async function register(email, password) {
-  const resp = await fetch(`${BASE_URL}/Auth/register`, {
+  const url = `${BASE_URL}/Auth/register`;
+  console.log('[HB] Register call ->', url, { email }); // TEMP DEBUG
+  const resp = await fetch(url, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ email, password })

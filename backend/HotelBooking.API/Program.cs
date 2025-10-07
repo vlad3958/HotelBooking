@@ -10,43 +10,48 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS for local dev and deployed static frontends (GitHub Pages, etc.)
+// CORS configuration. User requested to "allow absolutely all traffic".
+// We provide an override env var ALLOW_ALL_CORS=true for production toggle.
 var corsPolicy = "DevCors";
-
-// Base allowed origins (only scheme + host + optional port matter; path segments ignored)
-var allowedOrigins = new List<string>
-{
-    // Local development (static frontend via http-server)
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
-    "http://localhost:3000",
-    // GitHub Pages (user or project site)
-    "https://vlad3958.github.io",
-    // (Legacy / placeholder examples kept for reference – remove if not needed)
-    "https://hotelbooking-api.onrender.com",
-};
-
-// Allow injecting extra origins via environment variable (comma / semicolon / space separated)
-var extraCors = Environment.GetEnvironmentVariable("EXTRA_CORS_ORIGINS");
-if (!string.IsNullOrWhiteSpace(extraCors))
-{
-    foreach (var origin in extraCors.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
-    {
-        var trimmed = origin.Trim();
-        if (!string.IsNullOrWhiteSpace(trimmed) && !allowedOrigins.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
-        {
-            allowedOrigins.Add(trimmed);
-        }
-    }
-}
+var allowAll = string.Equals(Environment.GetEnvironmentVariable("ALLOW_ALL_CORS"), "true", StringComparison.OrdinalIgnoreCase);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(corsPolicy, p => p
-        .WithOrigins(allowedOrigins.ToArray())
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials());
+    options.AddPolicy(corsPolicy, p =>
+    {
+        if (allowAll)
+        {
+            // Fully permissive (no credentials) – safest broad mode for debugging frontends from any origin
+            p.AllowAnyOrigin()
+             .AllowAnyHeader()
+             .AllowAnyMethod();
+        }
+        else
+        {
+            // Minimal curated list (can extend via EXTRA_CORS_ORIGINS if needed)
+            var allowedOrigins = new List<string>
+            {
+                "http://localhost:5500",
+                "http://127.0.0.1:5500",
+                "http://localhost:3000",
+                "https://vlad3958.github.io"
+            };
+            var extraCors = Environment.GetEnvironmentVariable("EXTRA_CORS_ORIGINS");
+            if (!string.IsNullOrWhiteSpace(extraCors))
+            {
+                foreach (var origin in extraCors.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var trimmed = origin.Trim();
+                    if (!string.IsNullOrWhiteSpace(trimmed) && !allowedOrigins.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+                        allowedOrigins.Add(trimmed);
+                }
+            }
+            p.WithOrigins(allowedOrigins.ToArray())
+             .AllowAnyHeader()
+             .AllowAnyMethod()
+             .AllowCredentials();
+        }
+    });
 });
 
 // Add services to the container.
