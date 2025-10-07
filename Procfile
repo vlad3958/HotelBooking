@@ -1,0 +1,1 @@
+web: cd backend/HotelBooking.API && dotnet HotelBooking.API.dll

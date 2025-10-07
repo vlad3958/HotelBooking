@@ -70,13 +70,38 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure EF Core with MySQL (Pomelo)
-// Render provides DATABASE_URL environment variable for managed database
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
-if (string.IsNullOrEmpty(connectionString))
+// Heroku ClearDB provides CLEARDB_DATABASE_URL (e.g. mysql://user:pass@host/db?reconnect=true)
+// Some platforms (Render) provide DATABASE_URL.
+string? connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    var clearDbUrl = Environment.GetEnvironmentVariable("CLEARDB_DATABASE_URL");
+    if (!string.IsNullOrWhiteSpace(clearDbUrl))
+    {
+        try
+        {
+            var uri = new Uri(clearDbUrl);
+            // uri.PathAndQuery starts with /dbname
+            var db = uri.AbsolutePath.TrimStart('/');
+            var userInfo = uri.UserInfo.Split(':');
+            var user = Uri.UnescapeDataString(userInfo[0]);
+            var pass = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+            var host = uri.Host;
+            var port = uri.Port > 0 ? uri.Port : 3306;
+            // Build standard MySQL connection string for Pomelo
+            connectionString = $"Server={host};Port={port};Database={db};User Id={user};Password={pass};SslMode=Preferred;CharSet=utf8mb4;";
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Failed to parse CLEARDB_DATABASE_URL", ex);
+        }
+    }
+}
+if (string.IsNullOrWhiteSpace(connectionString))
 {
     // Fallback to appsettings for local development
     connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found and DATABASE_URL not set.");
+        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found and no database URL env var set.");
 }
 
 builder.Services.AddDbContext<HotelBookingDbContext>(options =>
@@ -180,6 +205,13 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
+
+// Heroku provides PORT env var; configure Kestrel binding accordingly if set
+var herokuPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(herokuPort))
+{
+    app.Urls.Add($"http://0.0.0.0:{herokuPort}");
+}
 
 app.UseCors(corsPolicy);
 
