@@ -1,4 +1,7 @@
-import { apiBase, getToken } from './apiClient.js';
+import { apiBase as rawApiBase, getToken } from './apiClient.js';
+
+// Normalize apiBase to avoid accidental double /api/api when concatenating
+const apiBase = rawApiBase.replace(/\/api\/api(\/|$)/,'/api$1');
 
 // Toast notifications
 function showToast(message, type='info', timeout=4000){
