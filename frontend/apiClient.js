@@ -9,7 +9,7 @@
  */
 const DEFAULT_LOCAL = 'http://localhost:5127/api';
 // Corrected deployed API URL (Heroku backend):
-const HEROKU_BACKEND = 'https://hotel-booking-api-940e39a34b89.herokuapp.com/api';
+const HEROKU_BACKEND = 'https://hotelbooking-api-dotnet-f4ed83e25d9f.herokuapp.com/api';
 function resolveBaseUrl() {
   if (typeof window !== 'undefined' && window.HOTEL_API_BASE) {
     return window.HOTEL_API_BASE.replace(/\/$/, '');
