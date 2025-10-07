@@ -1,8 +1,28 @@
 /**
  * Simple API client for HotelBooking backend.
- * Adjust BASE_URL if your backend runs on a different port/host.
+ * BASE_URL auto-detects depending on hosting:
+ *  - Localhost (dev)
+ *  - If running on GitHub Pages (hostname ends with github.io) -> use HEROKU_API_URL override you can inject via <script> before bundle OR fallback to hardcoded Heroku backend
+ *  - Fallback: localhost
  */
-const BASE_URL = 'http://localhost:5127/api';
+const DEFAULT_LOCAL = 'http://localhost:5127/api';
+// Put your deployed API URL here (Heroku backend):
+const HEROKU_BACKEND = 'https://hotelbooking-api-dotnet-f4ed83e25d9f.herokuapp.com/api';
+
+function resolveBaseUrl() {
+  // If a global override is set (window.HOTEL_API_BASE) use it
+  if (typeof window !== 'undefined' && window.HOTEL_API_BASE) {
+    return window.HOTEL_API_BASE.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined') {
+    const host = window.location.host.toLowerCase();
+    if (host.includes('localhost')) return DEFAULT_LOCAL;
+    if (host.endsWith('github.io')) return HEROKU_BACKEND; // GitHub Pages domain
+  }
+  return DEFAULT_LOCAL;
+}
+
+const BASE_URL = resolveBaseUrl();
 
 // In-memory token store (replace with better storage if needed)
 let authToken = null;
@@ -148,7 +168,7 @@ export async function addRoom(hotelId, name, price, capacity, startDate = null, 
 }
 
 // Utility ------------------------------------------------
-export function setBaseUrl(newBase) { /* if needed later */ }
+export function setBaseUrl(newBase) { /* runtime override */ if (newBase) { /* no-op placeholder for future dynamic switching */ } }
 
 // Example usage (uncomment to test in browser environment)
 // login('admin@example.com', 'Admin123!').then(() => getHotels()).then(console.log).catch(console.error);
