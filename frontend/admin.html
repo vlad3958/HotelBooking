@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Panel - HotelBooking</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 0; background:#f5f7fa; }
+    header { background:#1f4d8f; color:#fff; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; }
+    h1 { font-size:20px; margin:0; }
+    nav a { color:#fff; margin-right:12px; text-decoration:none; font-weight:500; }
+    main { padding:20px; max-width:1200px; margin:0 auto; }
+    section { background:#fff; border-radius:8px; padding:16px 18px; margin-bottom:20px; box-shadow:0 2px 4px rgba(0,0,0,0.08); }
+    section h2 { margin-top:0; font-size:18px; }
+    form { display:grid; gap:8px; margin-bottom:10px; }
+    label { font-size:13px; font-weight:600; text-transform:uppercase; color:#444; }
+    input, select { padding:8px; border:1px solid #bbb; border-radius:4px; font-size:14px; }
+    button { cursor:pointer; border:none; background:#1f4d8f; color:#fff; padding:8px 14px; border-radius:4px; font-size:14px; font-weight:600; }
+    button.secondary { background:#555; }
+    button.danger { background:#c0392b; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; }
+    .flex { display:flex; gap:12px; }
+    pre { background:#272822; color:#e8e8e8; padding:10px; border-radius:6px; font-size:12px; max-height:220px; overflow:auto; }
+    .error { color:#c0392b; font-weight:600; }
+    .ok { color:#2c7a3f; font-weight:600; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th, td { padding:6px 8px; border-bottom:1px solid #e2e4e7; text-align:left; }
+    th { background:#f0f2f5; }
+    .badge { background:#1f4d8f; color:#fff; border-radius:12px; padding:2px 8px; font-size:11px; }
+    .muted { color:#666; font-size:12px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>HotelBooking Admin</h1>
+  <nav>
+    <a href="./login.html">Logout</a>
+    <a href="./hotels.html">Hotels</a>
+  </nav>
+</header>
+<main>
+  <div id="roleCheck" class="muted">Checking admin role...</div>
+
+  <section id="overview">
+    <h2>System Overview</h2>
+    <div class="row">
+      <button id="btnLoadBookings">Load All Bookings</button>
+      <button id="btnStats">Load Booking Stats (last 30d)</button>
+      <button id="btnDecodeToken">Decode Token</button>
+    </div>
+    <div id="statsResult" class="muted"></div>
+    <pre id="bookingsOutput" style="display:none"></pre>
+  </section>
+
+  <section>
+    <h2>Add Hotel</h2>
+    <form id="formAddHotel">
+      <label>Name <input name="name" required /></label>
+      <label>Address <input name="address" required /></label>
+      <label>Description <input name="description" required /></label>
+      <button type="submit">Create Hotel</button>
+      <span id="hotelMsg" class="muted"></span>
+    </form>
+  </section>
+
+  <section>
+    <h2>Update Hotel</h2>
+    <form id="formUpdateHotel">
+      <label>Hotel ID <input name="hotelId" type="number" required /></label>
+      <label>Name <input name="name" required /></label>
+      <label>Address <input name="address" required /></label>
+      <label>Description <input name="description" required /></label>
+      <button type="submit">Update</button>
+      <span id="hotelUpdateMsg" class="muted"></span>
+    </form>
+  </section>
+
+  <section>
+    <h2>Remove Hotel</h2>
+    <form id="formRemoveHotel">
+      <label>Hotel ID <input name="hotelId" type="number" required /></label>
+      <button type="submit" class="danger">Delete</button>
+      <span id="hotelRemoveMsg" class="muted"></span>
+    </form>
+  </section>
+
+  <section>
+    <h2>Add Room</h2>
+    <form id="formAddRoom">
+      <label>Hotel ID <input name="hotelId" type="number" required /></label>
+      <label>Name <input name="name" required /></label>
+      <label>Price <input name="price" type="number" step="0.01" required /></label>
+      <label>Capacity <input name="capacity" type="number" required /></label>
+      <label>Start Date (opt) <input name="startDate" type="date" /></label>
+      <label>End Date (opt) <input name="endDate" type="date" /></label>
+      <button type="submit">Add Room</button>
+      <span id="roomMsg" class="muted"></span>
+    </form>
+  </section>
+
+  <section>
+    <h2>Update Room</h2>
+    <form id="formUpdateRoom">
+      <label>Room ID <input name="roomId" type="number" required /></label>
+      <label>Name <input name="name" required /></label>
+      <label>Price <input name="price" type="number" step="0.01" required /></label>
+      <label>Capacity <input name="capacity" type="number" required /></label>
+      <button type="submit">Update</button>
+      <span id="roomUpdateMsg" class="muted"></span>
+    </form>
+  </section>
+
+  <section>
+    <h2>Remove Room</h2>
+    <form id="formRemoveRoom">
+      <label>Room ID <input name="roomId" type="number" required /></label>
+      <button type="submit" class="danger">Delete</button>
+      <span id="roomRemoveMsg" class="muted"></span>
+    </form>
+  </section>
+
+</main>
+<script type="module" src="./admin.js"></script>
+</body>
+</html>
