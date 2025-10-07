@@ -194,8 +194,48 @@ async function loadStats(rangeDays=30){
   const end = new Date();
   const start = new Date(Date.now() - rangeDays*86400000);
   const q = encodeQuery({ startDate:start.toISOString(), endDate:end.toISOString() });
-  try { const data = await apiFetch('/Admin/stats/bookings'+q); statsDiv.textContent='Stats: '+JSON.stringify(data); }
+  try {
+    const data = await apiFetch('/Admin/stats/bookings'+q);
+    renderStats(data, statsDiv);
+  }
   catch(err){ statsDiv.textContent='Error '+(err.data?.message || err.status); }
+}
+
+function renderStats(data, host){
+  if(!data){ host.textContent='No stats'; return; }
+  host.innerHTML='';
+  const prettyMap = [
+    { key:'totalBookings', label:'Bookings', accent:'#1f4d8f' },
+    { key:'distinctRooms', label:'Rooms Used', accent:'#235fae' },
+    { key:'distinctUsers', label:'Users', accent:'#2c7a3f' },
+    { key:'totalRoomNights', label:'Room Nights', accent:'#8555c9' }
+  ];
+  const period = document.createElement('div');
+  period.style.flexBasis='100%';
+  period.style.fontSize='12px';
+  period.style.color='#555';
+  period.textContent = `Period: ${formatDate(data.startDate)} – ${formatDate(data.endDate)}`;
+  host.appendChild(period);
+  prettyMap.forEach(m => {
+    const v = data[m.key];
+    const card = document.createElement('div');
+    card.style.background='#ffffff';
+    card.style.border='1px solid #e3e9ef';
+    card.style.borderRadius='8px';
+    card.style.padding='10px 14px';
+    card.style.minWidth='140px';
+    card.style.flex='1 1 140px';
+    card.style.display='flex';
+    card.style.flexDirection='column';
+    card.style.gap='4px';
+    card.innerHTML = `<span style="font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#6a7785;">${m.label}</span>`+
+      `<span style="font-size:22px;font-weight:600;color:${m.accent}">${v ?? 0}</span>`;
+    host.appendChild(card);
+  });
+}
+
+function formatDate(dt){
+  try { const d = new Date(dt); return d.toISOString().substring(0,10); } catch { return dt; }
 }
 
 function decodeTokenBtn(){
