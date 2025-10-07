@@ -72,7 +72,7 @@
 
   <section>
     <h2>Add Hotel</h2>
-    <form id="formAddHotel">
+  <form id="formAddHotel" method="post">
       <label>Name <input name="name" required /></label>
       <label>Address <input name="address" required /></label>
       <label>Description <input name="description" required /></label>
@@ -83,7 +83,7 @@
 
   <section>
     <h2>Update Hotel</h2>
-    <form id="formUpdateHotel">
+  <form id="formUpdateHotel" method="post">
       <label>Hotel ID <input name="hotelId" type="number" required /></label>
       <label>Name <input name="name" required /></label>
       <label>Address <input name="address" required /></label>
@@ -95,7 +95,7 @@
 
   <section>
     <h2>Remove Hotel</h2>
-    <form id="formRemoveHotel">
+  <form id="formRemoveHotel" method="post">
       <label>Hotel ID <input name="hotelId" type="number" required /></label>
       <button type="submit" class="danger">Delete</button>
       <span id="hotelRemoveMsg" class="muted"></span>
@@ -104,7 +104,7 @@
 
   <section>
     <h2>Add Room</h2>
-    <form id="formAddRoom">
+  <form id="formAddRoom" method="post">
       <label>Hotel ID <input name="hotelId" type="number" required /></label>
       <label>Name <input name="name" required /></label>
       <label>Price <input name="price" type="number" step="0.01" required /></label>
@@ -118,7 +118,7 @@
 
   <section>
     <h2>Update Room</h2>
-    <form id="formUpdateRoom">
+  <form id="formUpdateRoom" method="post">
       <label>Room ID <input name="roomId" type="number" required /></label>
       <label>Name <input name="name" required /></label>
       <label>Price <input name="price" type="number" step="0.01" required /></label>
@@ -130,7 +130,7 @@
 
   <section>
     <h2>Remove Room</h2>
-    <form id="formRemoveRoom">
+  <form id="formRemoveRoom" method="post">
       <label>Room ID <input name="roomId" type="number" required /></label>
       <button type="submit" class="danger">Delete</button>
       <span id="roomRemoveMsg" class="muted"></span>

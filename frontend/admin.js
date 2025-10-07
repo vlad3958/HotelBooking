@@ -99,7 +99,7 @@ async function addHotel(e){
     description: f.description.value.trim()
   };
   try {
-    const data = await apiFetch('/api/Admin/AddHotel'+encodeQuery(body), { method:'POST' });
+  const data = await apiFetch('/Admin/AddHotel'+encodeQuery(body), { method:'POST' });
     const createdId = data?.hotelId || 'OK';
     setStatus(msg,'Hotel created id '+ createdId, true);
     showToast('Отель создан (ID '+createdId+')','success');
@@ -118,7 +118,7 @@ async function updateHotel(e){
   const hotelId = f.hotelId.value;
   const q = encodeQuery({ name:f.name.value.trim(), address:f.address.value.trim(), description:f.description.value.trim() });
   try {
-    await apiFetch('/api/Admin/UpdateHotel/'+hotelId + q, { method:'POST' });
+  await apiFetch('/Admin/UpdateHotel/'+hotelId + q, { method:'POST' });
     setStatus(msg,'Updated', true);
     showToast('Отель обновлён ('+hotelId+')','success');
   } catch(err){ setStatus(msg,'Error '+(err.data?.message || err.status), false); }
@@ -130,7 +130,7 @@ async function removeHotel(e){
   const msg = document.getElementById('hotelRemoveMsg');
   setStatus(msg,'');
   try {
-    await apiFetch('/api/Admin/RemoveHotel/'+f.hotelId.value, { method:'DELETE' });
+  await apiFetch('/Admin/RemoveHotel/'+f.hotelId.value, { method:'DELETE' });
     setStatus(msg,'Removed', true);
     showToast('Отель удалён ('+f.hotelId.value+')','success');
   } catch(err){ setStatus(msg,'Error '+(err.data?.message || err.status), false); }
@@ -147,7 +147,7 @@ async function addRoom(e){
     startDate: f.startDate.value,
     endDate: f.endDate.value
   });
-  try { await apiFetch('/api/Admin/AddRoom'+q, { method:'POST' }); setStatus(msg,'Room added', true); }
+  try { await apiFetch('/Admin/AddRoom'+q, { method:'POST' }); setStatus(msg,'Room added', true); }
   catch(err){
     const m = 'Ошибка добавления комнаты: '+(err.data?.message || err.status);
     setStatus(msg,m,false); showToast(m,'error');
@@ -159,7 +159,7 @@ async function updateRoom(e){
   e.preventDefault();
   const f = e.target; const msg = document.getElementById('roomUpdateMsg'); setStatus(msg,'');
   const q = encodeQuery({ name:f.name.value.trim(), price:f.price.value, capacity:f.capacity.value });
-  try { await apiFetch('/api/Admin/UpdateRoom/'+f.roomId.value + q, { method:'POST' }); setStatus(msg,'Updated', true); }
+  try { await apiFetch('/Admin/UpdateRoom/'+f.roomId.value + q, { method:'POST' }); setStatus(msg,'Updated', true); }
   catch(err){
     const m='Ошибка обновления комнаты: '+(err.data?.message || err.status);
     setStatus(msg,m,false); showToast(m,'error'); return;
@@ -170,7 +170,7 @@ async function updateRoom(e){
 async function removeRoom(e){
   e.preventDefault();
   const f = e.target; const msg = document.getElementById('roomRemoveMsg'); setStatus(msg,'');
-  try { await apiFetch('/api/Admin/RemoveRoom/'+f.roomId.value, { method:'DELETE' }); setStatus(msg,'Removed', true); }
+  try { await apiFetch('/Admin/RemoveRoom/'+f.roomId.value, { method:'DELETE' }); setStatus(msg,'Removed', true); }
   catch(err){
     const m='Ошибка удаления комнаты: '+(err.data?.message || err.status);
     setStatus(msg,m,false); showToast(m,'error'); return;
@@ -181,7 +181,7 @@ async function removeRoom(e){
 async function loadBookings(){
   const out = document.getElementById('bookingsOutput');
   out.style.display='block'; out.textContent='Loading...';
-  try { const data = await apiFetch('/api/Admin/bookings'); out.textContent = JSON.stringify(data,null,2); }
+  try { const data = await apiFetch('/Admin/bookings'); out.textContent = JSON.stringify(data,null,2); }
   catch(err){ out.textContent='Error '+(err.data?.message || err.status); }
 }
 
@@ -191,7 +191,7 @@ async function loadStats(rangeDays=30){
   const end = new Date();
   const start = new Date(Date.now() - rangeDays*86400000);
   const q = encodeQuery({ startDate:start.toISOString(), endDate:end.toISOString() });
-  try { const data = await apiFetch('/api/Admin/stats/bookings'+q); statsDiv.textContent='Stats: '+JSON.stringify(data); }
+  try { const data = await apiFetch('/Admin/stats/bookings'+q); statsDiv.textContent='Stats: '+JSON.stringify(data); }
   catch(err){ statsDiv.textContent='Error '+(err.data?.message || err.status); }
 }
 

@@ -23,6 +23,8 @@ function resolveBaseUrl() {
 }
 
 const BASE_URL = resolveBaseUrl();
+// Exportable alias for other modules (admin.js expects apiBase)
+export const apiBase = BASE_URL;
 // TEMP DEBUG
 if (typeof window !== 'undefined') { console.log('[HB] Using BASE_URL:', BASE_URL); }
 
